@@ -1,0 +1,37 @@
+DGXO Assets License (All Rights Reserved)
+
+1. PoniX & DGXO Brand Assets
+Files:
+- assets/ponix-logo.png
+- assets/ponix-logo-white.png
+- assets/ponix-x.png
+- assets/ponix-x-white.png
+
+Copyright (c) 2026 Dream & Driven Generation eXperience Operations (DGXO).
+All Rights Reserved.
+
+These brand assets are NOT covered by the MIT License. Full distribution or
+redistribution rights are NOT granted. You may only use them unmodified locally
+to run or build the official PoniX distribution. You may NOT redistribute,
+republish, bundle in separate distributions, modify, or reuse these logos, marks,
+or the PoniX/DGXO name in forks or other projects without prior written
+permission from Dream & Driven Generation eXperience Operations (DGXO).
+
+2. Third-Party Tool Icons
+Files:
+- assets/antigravity.png
+- assets/claude.png
+
+These icons remain the trademarks and property of their respective owners
+(Antigravity and Anthropic / Claude). They are included solely to identify the
+corresponding external CLI tools inside the Agent Terminal launcher and are not
+claimed by DGXO or licensed under MIT.
+
+3. Fonts
+Files:
+- assets/fonts/Outfit-Regular.ttf
+- assets/fonts/Outfit-Medium.ttf
+- assets/fonts/Outfit-SemiBold.ttf
+- assets/fonts/Outfit-Bold.ttf
+
+Licensed under the SIL Open Font License, Version 1.1 (OFL-1.1).

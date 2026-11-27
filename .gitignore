@@ -1,0 +1,5 @@
+INTERNAL_FEATURES.md
+__pycache__/
+*.pyc
+*.bak
+.DS_Store
