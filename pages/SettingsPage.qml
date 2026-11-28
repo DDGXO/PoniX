@@ -265,11 +265,11 @@ Item {
                 }
             }
 
-            // Segmented Control (Apple HIG 4-segment capsule)
+            // Segmented Control (Apple HIG 5-segment capsule)
             Rectangle {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: 292
+                width: 344
                 height: 26
                 radius: PoniConfig.activeTheme.sharp ? 3 : 13
                 color: PoniConfig.colSurface
@@ -282,6 +282,7 @@ Item {
                     readonly property var sections: [
                         { id: "theme", label: "Theme" },
                         { id: "appearance", label: "Appearance" },
+                        { id: "eyes", label: "Eyes" },
                         { id: "behavior", label: "Behavior" },
                         { id: "display", label: "Display" }
                     ]
@@ -290,7 +291,7 @@ Item {
                         model: parent.sections
                         Rectangle {
                             property bool sel: root.section === modelData.id
-                            width: (parent.width - 6) / 4
+                            width: (parent.width - 8) / 5
                             height: parent.height
                             radius: PoniConfig.activeTheme.sharp ? 2 : 11
                             color: sel ? Qt.rgba(1, 1, 1, 0.18) : (segArea.containsMouse ? Qt.rgba(1, 1, 1, 0.07) : "transparent")
@@ -465,19 +466,55 @@ Item {
                             required property var modelData
                             property bool sel: PoniConfig.theme === "pixel" && PoniConfig.pixelScene === modelData.id
                             width: (pixelArtTabGrid.width - 24) / 4
-                            height: 30
-                            radius: 4
+                            height: 52
+                            radius: 8
                             color: sel ? Qt.rgba(1, 1, 1, 0.16) : (pxArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
                             border.color: sel ? "#a78bfa" : Qt.rgba(1, 1, 1, 0.08)
                             border.width: sel ? 1.5 : 1
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData.label
-                                font.family: PoniConfig.fontFamily
-                                font.pixelSize: 10
-                                font.weight: sel ? Font.DemiBold : Font.Medium
-                                color: sel ? PoniConfig.colText : PoniConfig.colTextDim
+                            Column {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: 3
+
+                                Canvas {
+                                    width: parent.width
+                                    height: 26
+                                    property string scId: modelData.id
+                                    Component.onCompleted: requestPaint()
+                                    onPaint: {
+                                        var ctx = getContext("2d");
+                                        var w = width, h = height;
+                                        ctx.clearRect(0, 0, w, h);
+                                        var hash = 0;
+                                        for (var i = 0; i < scId.length; i++) hash = (hash * 31 + scId.charCodeAt(i)) & 0xffffff;
+                                        var hue = (hash % 360);
+                                        var g = ctx.createLinearGradient(0, 0, 0, h);
+                                        g.addColorStop(0, "hsl(" + hue + ", 55%, 14%)");
+                                        g.addColorStop(1, "hsl(" + ((hue + 40) % 360) + ", 60%, 28%)");
+                                        ctx.fillStyle = g;
+                                        ctx.fillRect(0, 0, w, h);
+                                        ctx.fillStyle = "hsl(" + ((hue + 140) % 360) + ", 85%, 68%)";
+                                        for (var p = 0; p < 6; p++) {
+                                            var px = ((hash + p * 23) % Math.max(8, Math.floor(w - 4)));
+                                            var py = ((hash + p * 11) % Math.max(6, Math.floor(h - 4)));
+                                            ctx.fillRect(px, py, 2, 2);
+                                        }
+                                        ctx.fillStyle = "rgba(0,0,0,0.45)";
+                                        ctx.fillRect(0, h - 6, w, 6);
+                                    }
+                                }
+
+                                Text {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    elide: Text.ElideRight
+                                    text: modelData.label
+                                    font.family: PoniConfig.fontFamily
+                                    font.pixelSize: 9
+                                    font.weight: sel ? Font.DemiBold : Font.Medium
+                                    color: sel ? PoniConfig.colText : PoniConfig.colTextDim
+                                }
                             }
 
                             MouseArea {
@@ -509,19 +546,60 @@ Item {
                             required property var modelData
                             property bool sel: PoniConfig.theme === "diorama" && PoniConfig.dioramaScene === modelData.id
                             width: (scenesTabGrid.width - 24) / 4
-                            height: 30
-                            radius: PoniConfig.activeTheme.sharp ? 4 : 10
+                            height: 52
+                            radius: 8
                             color: sel ? Qt.rgba(1, 1, 1, 0.16) : (scArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
                             border.color: sel ? PoniConfig.colAccent : Qt.rgba(1, 1, 1, 0.08)
                             border.width: sel ? 1.5 : 1
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData.label
-                                font.family: PoniConfig.fontFamily
-                                font.pixelSize: 10
-                                font.weight: sel ? Font.DemiBold : Font.Medium
-                                color: sel ? PoniConfig.colText : PoniConfig.colTextDim
+                            Column {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: 3
+
+                                Canvas {
+                                    width: parent.width
+                                    height: 26
+                                    property string scId: modelData.id
+                                    property string scCat: modelData.cat
+                                    Component.onCompleted: requestPaint()
+                                    onPaint: {
+                                        var ctx = getContext("2d");
+                                        var w = width, h = height;
+                                        ctx.clearRect(0, 0, w, h);
+                                        var hash = 0;
+                                        for (var i = 0; i < scId.length; i++) hash = (hash * 37 + scId.charCodeAt(i)) & 0xffffff;
+                                        var c1 = "#0f172a", c2 = "#1e293b", acc = "#38bdf8";
+                                        if (scCat === "Cosmic") { c1 = "#050714"; c2 = "#311042"; acc = "#c084fc"; }
+                                        else if (scCat === "City") { c1 = "#090818"; c2 = "#2e1036"; acc = "#f472b6"; }
+                                        else if (scCat === "Game") { c1 = "#041208"; c2 = "#111827"; acc = "#4ade80"; }
+                                        else { c1 = "hsl(" + (hash % 240) + ", 45%, 16%)"; c2 = "hsl(" + ((hash + 55) % 360) + ", 55%, 28%)"; acc = "#fde047"; }
+                                        var g = ctx.createLinearGradient(0, 0, 0, h);
+                                        g.addColorStop(0, c1);
+                                        g.addColorStop(1, c2);
+                                        ctx.fillStyle = g;
+                                        ctx.fillRect(0, 0, w, h);
+                                        ctx.fillStyle = acc;
+                                        ctx.beginPath();
+                                        ctx.arc(w * 0.25 + (hash % Math.max(10, Math.floor(w * 0.5))), 8 + (hash % 6), 3, 0, Math.PI * 2);
+                                        ctx.fill();
+                                        ctx.fillStyle = "rgba(0,0,0,0.42)";
+                                        ctx.beginPath();
+                                        ctx.moveTo(0, h); ctx.lineTo(w * 0.35, h - 10); ctx.lineTo(w * 0.68, h - 6); ctx.lineTo(w, h - 11); ctx.lineTo(w, h);
+                                        ctx.closePath(); ctx.fill();
+                                    }
+                                }
+
+                                Text {
+                                    width: parent.width
+                                    horizontalAlignment: Text.AlignHCenter
+                                    elide: Text.ElideRight
+                                    text: modelData.label
+                                    font.family: PoniConfig.fontFamily
+                                    font.pixelSize: 9
+                                    font.weight: sel ? Font.DemiBold : Font.Medium
+                                    color: sel ? PoniConfig.colText : PoniConfig.colTextDim
+                                }
                             }
 
                             MouseArea {
@@ -553,44 +631,51 @@ Item {
                             required property var modelData
                             property bool sel: PoniConfig.theme === modelData.id
                             width: (themeGrid.width - 24) / 4
-                            height: 34
-                            radius: modelData.sharp ? 4 : 10
+                            height: 58
+                            radius: 10
                             color: sel ? Qt.rgba(1, 1, 1, 0.14) : (swatchArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
                             border.color: sel ? modelData.accent : Qt.rgba(1, 1, 1, 0.08)
                             border.width: sel ? 1.5 : 1
 
-                            Row {
+                            Column {
                                 anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
-                                spacing: 7
+                                anchors.margins: 5
+                                spacing: 4
 
-                                // Mini 2-tone palette swatch
                                 Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 18
-                                    height: 18
-                                    radius: modelData.sharp ? 3 : 9
-                                    color: modelData.bg === "transparent" ? "#1e293b" : modelData.bg
-                                    border.color: modelData.border
-                                    border.width: 1.5
+                                    width: parent.width
+                                    height: 26
+                                    radius: 6
+                                    color: modelData.id === "eink" ? "#e5e1d8" : "#111827"
+                                    clip: true
 
                                     Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 7
-                                        height: 7
-                                        radius: modelData.sharp ? 1 : 4
-                                        color: modelData.accent
+                                        anchors.top: parent.top
+                                        anchors.topMargin: modelData.id === "pill" ? 5 : 0
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: modelData.id === "pill" ? parent.width * 0.62 : parent.width * 0.72
+                                        height: 14
+                                        radius: modelData.id === "pill" ? 7 : 6
+                                        color: modelData.bg === "transparent" ? "#1e293b" : modelData.bg
+                                        border.color: modelData.border
+                                        border.width: 1
+
+                                        Row {
+                                            anchors.centerIn: parent
+                                            spacing: 4
+                                            Rectangle { width: 6; height: 6; radius: 3; color: modelData.accent }
+                                            Rectangle { width: 22; height: 3; radius: 1.5; anchors.verticalCenter: parent.verticalCenter; color: modelData.text; opacity: 0.85 }
+                                            Rectangle { width: 8; height: 4; radius: 1; anchors.verticalCenter: parent.verticalCenter; color: modelData.dim; opacity: 0.7 }
+                                        }
                                     }
                                 }
 
-                                Column {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: parent.width - 25
-                                    spacing: 1
+                                Row {
+                                    width: parent.width
+                                    spacing: 4
 
                                     Text {
-                                        width: parent.width
+                                        width: parent.width - catTag.width - 4
                                         elide: Text.ElideRight
                                         text: modelData.label
                                         font.family: modelData.mono ? "monospace" : PoniConfig.fontFamily
@@ -600,6 +685,7 @@ Item {
                                     }
 
                                     Text {
+                                        id: catTag
                                         text: modelData.cat
                                         font.family: PoniConfig.fontFamily
                                         font.pixelSize: 8
@@ -633,10 +719,10 @@ Item {
             anchors.right: parent.right
             spacing: 10
 
-            // Card 1: Idle Look + Eye Style (20)
+            // Card 1: Notch Style & Idle Look
             Rectangle {
                 width: parent.width
-                height: PoniConfig.idleLook === "eyes" ? 124 : 52
+                height: 82
                 radius: PoniConfig.activeTheme.sharp ? 4 : 12
                 color: Qt.rgba(1, 1, 1, 0.04)
                 border.color: Qt.rgba(1, 1, 1, 0.07)
@@ -649,7 +735,75 @@ Item {
 
                     Item {
                         width: parent.width
-                        height: 28
+                        height: 26
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Notch Style"
+                            font.family: PoniConfig.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            color: PoniConfig.colTextDim
+                        }
+
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 220
+                            height: 24
+                            radius: PoniConfig.activeTheme.sharp ? 3 : 12
+                            color: PoniConfig.colSurface
+
+                            Row {
+                                anchors.fill: parent
+                                anchors.margins: 2
+                                spacing: 2
+
+                                readonly property var shapes: [
+                                    { floating: false, label: "Attached" },
+                                    { floating: true, label: "Floating" }
+                                ]
+
+                                Repeater {
+                                    model: parent.shapes
+                                    Rectangle {
+                                        property bool sel: PoniConfig.notchFloating === modelData.floating
+                                        width: (parent.width - 2) / 2
+                                        height: parent.height
+                                        radius: PoniConfig.activeTheme.sharp ? 2 : 10
+                                        color: sel ? Qt.rgba(1, 1, 1, 0.18) : (shArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent")
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData.label
+                                            font.family: PoniConfig.fontFamily
+                                            font.pixelSize: 10
+                                            font.weight: sel ? Font.DemiBold : Font.Normal
+                                            color: sel ? PoniConfig.colText : PoniConfig.colTextDim
+                                        }
+
+                                        MouseArea {
+                                            id: shArea
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                PoniConfig.notchFloating = modelData.floating;
+                                                PoniConfig.saveSettings();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle { width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
+
+                    Item {
+                        width: parent.width
+                        height: 26
 
                         Text {
                             anchors.left: parent.left
@@ -665,8 +819,8 @@ Item {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             width: 340
-                            height: 26
-                            radius: PoniConfig.activeTheme.sharp ? 3 : 13
+                            height: 24
+                            radius: PoniConfig.activeTheme.sharp ? 3 : 12
                             color: PoniConfig.colSurface
 
                             Row {
@@ -687,7 +841,7 @@ Item {
                                         property bool sel: PoniConfig.idleLook === modelData.id
                                         width: (parent.width - (parent.looks.length - 1) * 2) / parent.looks.length
                                         height: parent.height
-                                        radius: PoniConfig.activeTheme.sharp ? 2 : 11
+                                        radius: PoniConfig.activeTheme.sharp ? 2 : 10
                                         color: sel ? Qt.rgba(1, 1, 1, 0.18) : (lArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent")
 
                                         Text {
@@ -714,208 +868,44 @@ Item {
                             }
                         }
                     }
-
-                    Rectangle { visible: PoniConfig.idleLook === "eyes"; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
-
-                    Item {
-                        visible: PoniConfig.idleLook === "eyes"
-                        width: parent.width
-                        height: 20
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Keep Eyes visible while playing music"
-                            font.family: PoniConfig.fontFamily
-                            font.pixelSize: 10
-                            color: PoniConfig.colTextDim
-                        }
-
-                        PoniSwitch {
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            checked: PoniConfig.eyesDuringMedia
-                            onToggled: val => { PoniConfig.eyesDuringMedia = val; PoniConfig.saveSettings(); }
-                        }
-                    }
-
-                    // 20 Eye Styles Grid
-                    Flickable {
-                        visible: PoniConfig.idleLook === "eyes"
-                        width: parent.width
-                        height: 44
-                        clip: true
-                        contentWidth: width
-                        contentHeight: eyeStyleGrid.height
-                        boundsBehavior: Flickable.StopAtBounds
-
-                        Grid {
-                            id: eyeStyleGrid
-                            width: parent.width
-                            columns: 5
-                            columnSpacing: 6
-                            rowSpacing: 4
-
-                            Repeater {
-                                model: PoniConfig.eyeStyles
-                                Rectangle {
-                                    required property var modelData
-                                    property bool sel: PoniConfig.eyeStyle === modelData.id
-                                    width: (eyeStyleGrid.width - 24) / 5
-                                    height: 22
-                                    radius: PoniConfig.activeTheme.sharp ? 3 : 11
-                                    color: sel ? PoniConfig.colAccent : PoniConfig.colSurface
-
-                                    Row {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 6
-                                        anchors.rightMargin: 6
-                                        spacing: 5
-
-                                        // Mini Live Eye Preview
-                                        Canvas {
-                                            width: 14
-                                            height: 14
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            property string stId: modelData.id
-                                            Component.onCompleted: requestPaint()
-                                            onPaint: {
-                                                var ctx = getContext("2d");
-                                                ctx.clearRect(0, 0, 14, 14);
-                                                var cx = 7, cy = 7;
-                                                if (stId === "capsule") {
-                                                    ctx.fillStyle = "#ffffff";
-                                                    ctx.fillRect(3, 3, 3, 8); ctx.fillRect(8, 3, 3, 8);
-                                                } else if (stId === "terminator") {
-                                                    ctx.fillStyle = "#f8fafc";
-                                                    ctx.beginPath(); ctx.arc(4, cy, 2.4, 0, Math.PI * 2); ctx.fill();
-                                                    ctx.fillStyle = "#ef4444";
-                                                    ctx.beginPath(); ctx.arc(10, cy, 3.0, 0, Math.PI * 2); ctx.fill();
-                                                    ctx.fillStyle = "#ffffff";
-                                                    ctx.beginPath(); ctx.arc(10, cy, 1.0, 0, Math.PI * 2); ctx.fill();
-                                                } else if (stId === "sharingan" || stId === "rinnegan") {
-                                                    ctx.fillStyle = stId === "sharingan" ? "#dc2626" : "#a855f7";
-                                                    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
-                                                    ctx.strokeStyle = "#111"; ctx.lineWidth = 1;
-                                                    ctx.beginPath(); ctx.arc(cx, cy, 2.8, 0, Math.PI * 2); ctx.stroke();
-                                                } else if (stId === "cat") {
-                                                    ctx.fillStyle = "#facc15";
-                                                    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
-                                                    ctx.fillStyle = "#000"; ctx.fillRect(6, 3, 2, 8);
-                                                } else if (stId === "cyber" || stId === "cyclops") {
-                                                    ctx.fillStyle = stId === "cyclops" ? "#ef4444" : "#22d3ee";
-                                                    ctx.fillRect(1, 5, 12, 4);
-                                                } else if (stId === "kawaii") {
-                                                    ctx.fillStyle = "#111827";
-                                                    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
-                                                    ctx.fillStyle = "#fff";
-                                                    ctx.beginPath(); ctx.arc(5, 5, 1.8, 0, Math.PI * 2); ctx.fill();
-                                                } else if (stId === "heart") {
-                                                    ctx.fillStyle = "#fb7185"; ctx.font = "bold 11px sans-serif";
-                                                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                                                    ctx.fillText("♥", cx, cy + 1);
-                                                } else if (stId === "star") {
-                                                    ctx.fillStyle = "#fde047"; ctx.font = "bold 11px sans-serif";
-                                                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                                                    ctx.fillText("✦", cx, cy + 1);
-                                                } else if (stId === "dollar") {
-                                                    ctx.fillStyle = "#4ade80"; ctx.font = "bold 11px monospace";
-                                                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                                                    ctx.fillText("$", cx, cy + 1);
-                                                } else if (stId === "matrix") {
-                                                    ctx.fillStyle = "#4ade80"; ctx.font = "bold 10px monospace";
-                                                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                                                    ctx.fillText("01", cx, cy + 1);
-                                                } else if (stId === "xdead") {
-                                                    ctx.fillStyle = "#f87171"; ctx.font = "bold 11px monospace";
-                                                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                                                    ctx.fillText("X", cx, cy + 1);
-                                                } else if (stId === "spiral") {
-                                                    ctx.strokeStyle = "#e879f9"; ctx.lineWidth = 1.4;
-                                                    ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, Math.PI * 1.6); ctx.stroke();
-                                                    ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 1.5); ctx.stroke();
-                                                } else if (stId === "alien") {
-                                                    ctx.fillStyle = "#4ade80";
-                                                    ctx.beginPath(); ctx.ellipse(cx, cy, 3.5, 5, 0.3, 0, Math.PI * 2); ctx.fill();
-                                                } else if (stId === "robot") {
-                                                    ctx.fillStyle = "#38bdf8"; ctx.fillRect(2, 2, 10, 10);
-                                                    ctx.fillStyle = "#082f49"; ctx.fillRect(4, 6, 6, 2);
-                                                } else if (stId === "wink") {
-                                                    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.8;
-                                                    ctx.beginPath(); ctx.arc(cx, cy + 2, 4, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
-                                                } else if (stId === "sleepy") {
-                                                    ctx.fillStyle = "#fff";
-                                                    ctx.beginPath(); ctx.arc(cx, cy + 1, 4.5, 0, Math.PI); ctx.fill();
-                                                } else if (stId === "angry") {
-                                                    ctx.fillStyle = "#fff";
-                                                    ctx.save(); ctx.translate(cx, cy); ctx.rotate(0.35);
-                                                    ctx.fillRect(-5, -2, 10, 4); ctx.restore();
-                                                } else {
-                                                    ctx.fillStyle = "#fff"; ctx.fillRect(2, 5, 10, 4);
-                                                    ctx.fillStyle = "#111"; ctx.fillRect(8, 5, 3, 4);
-                                                }
-                                            }
-                                        }
-
-                                        Text {
-                                            width: parent.width - 19
-                                            elide: Text.ElideRight
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: modelData.label
-                                            font.family: PoniConfig.fontFamily
-                                            font.pixelSize: 9
-                                            font.weight: sel ? Font.DemiBold : Font.Normal
-                                            color: sel ? "#ffffff" : PoniConfig.colTextDim
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            PoniConfig.eyeStyle = modelData.id;
-                                            PoniConfig.saveSettings();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
 
             // Card 2: Material Controls (Liquid / Glass)
             Rectangle {
+                id: materialCard
                 width: parent.width
-                height: PoniConfig.idleLook === "eyes" ? 64 : 86
+                height: 82
                 radius: PoniConfig.theme === "pixel" ? 4 : 12
                 color: Qt.rgba(1, 1, 1, 0.04)
                 border.color: Qt.rgba(1, 1, 1, 0.07)
                 border.width: 1
 
-                readonly property bool isMaterialTheme: PoniConfig.theme === "liquid" || PoniConfig.theme === "glass"
+                readonly property bool isMaterialTheme: PoniConfig.theme === "liquid" || PoniConfig.theme === "glass" || PoniConfig.theme === "diorama" || PoniConfig.theme === "pixel"
+                readonly property bool isSceneTheme: PoniConfig.theme === "diorama" || PoniConfig.theme === "pixel"
+                readonly property bool showLiquidControls: PoniConfig.theme === "liquid" || (materialCard.isSceneTheme && PoniConfig.dioramaPixelLiquid)
 
                 Text {
-                    visible: !parent.isMaterialTheme
+                    visible: !materialCard.isMaterialTheme
                     anchors.centerIn: parent
-                    text: "Select Glass or Liquid in Theme tab to tune blur, opacity, rim, and bevel."
+                    text: "Select Glass, Liquid, Diorama, or Pixel in Theme tab to tune material & liquid controls."
                     font.family: PoniConfig.fontFamily
                     font.pixelSize: 11
                     color: PoniConfig.colTextFaint
                 }
 
                 Column {
-                    visible: parent.isMaterialTheme
+                    visible: materialCard.isMaterialTheme
                     anchors.fill: parent
                     anchors.margins: 10
                     spacing: 10
 
-                    // Row 1: Blur Toggle + Opacity Slider + Reset
                     Item {
                         width: parent.width
                         height: 24
 
                         Row {
+                            visible: !materialCard.isSceneTheme
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 8
@@ -935,9 +925,31 @@ Item {
                             }
                         }
 
-                        CapsuleSlider {
+                        Row {
+                            visible: materialCard.isSceneTheme
                             anchors.left: parent.left
-                            anchors.leftMargin: 120
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 8
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Diorama / Pixel Liquid"
+                                font.family: PoniConfig.fontFamily
+                                font.pixelSize: 11
+                                color: PoniConfig.colTextDim
+                            }
+
+                            PoniSwitch {
+                                anchors.verticalCenter: parent.verticalCenter
+                                checked: PoniConfig.dioramaPixelLiquid
+                                onToggled: val => { PoniConfig.dioramaPixelLiquid = val; PoniConfig.saveSettings(); }
+                            }
+                        }
+
+                        CapsuleSlider {
+                            visible: !materialCard.isSceneTheme || PoniConfig.dioramaPixelLiquid
+                            anchors.left: parent.left
+                            anchors.leftMargin: materialCard.isSceneTheme ? 184 : 120
                             anchors.right: resetBtn.left
                             anchors.rightMargin: 14
                             anchors.verticalCenter: parent.verticalCenter
@@ -977,6 +989,7 @@ Item {
                                     PoniConfig.glassOpacity = 0.28;
                                     PoniConfig.liquidSpecular = 0.72;
                                     PoniConfig.liquidBezelScale = 1.0;
+                                    PoniConfig.dioramaPixelLiquid = false;
                                     PoniConfig.saveSettings();
                                 }
                             }
@@ -985,7 +998,6 @@ Item {
 
                     Rectangle { width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.06) }
 
-                    // Row 2: Rim & Bevel (Liquid) or Info (Glass)
                     Item {
                         width: parent.width
                         height: 24
@@ -999,8 +1011,17 @@ Item {
                             color: PoniConfig.colTextFaint
                         }
 
+                        Text {
+                            visible: materialCard.isSceneTheme && !PoniConfig.dioramaPixelLiquid
+                            anchors.centerIn: parent
+                            text: "Enable Diorama / Pixel Liquid above to refract the live scene through optical glass."
+                            font.family: PoniConfig.fontFamily
+                            font.pixelSize: 10
+                            color: PoniConfig.colTextFaint
+                        }
+
                         CapsuleSlider {
-                            visible: PoniConfig.theme === "liquid"
+                            visible: materialCard.showLiquidControls
                             anchors.left: parent.left
                             width: (parent.width - 20) / 2
                             anchors.verticalCenter: parent.verticalCenter
@@ -1013,7 +1034,7 @@ Item {
                         }
 
                         CapsuleSlider {
-                            visible: PoniConfig.theme === "liquid"
+                            visible: materialCard.showLiquidControls
                             anchors.right: parent.right
                             width: (parent.width - 20) / 2
                             anchors.verticalCenter: parent.verticalCenter
@@ -1023,6 +1044,306 @@ Item {
                             value: PoniConfig.liquidBezelScale
                             valueText: PoniConfig.liquidBezelScale.toFixed(1) + "x"
                             onMoved: v => { PoniConfig.liquidBezelScale = Math.round(v * 10) / 10; }
+                        }
+                    }
+                }
+            }
+        }
+
+        Column {
+            visible: root.section === "eyes"
+            anchors.top: headerRow.bottom
+            anchors.topMargin: 10
+            anchors.left: parent.left
+            anchors.right: parent.right
+            spacing: 8
+
+            Rectangle {
+                width: parent.width
+                height: 32
+                radius: PoniConfig.activeTheme.sharp ? 4 : 10
+                color: Qt.rgba(1, 1, 1, 0.04)
+                border.color: Qt.rgba(1, 1, 1, 0.07)
+                border.width: 1
+
+                Row {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "50 Eye Styles"
+                        font.family: PoniConfig.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        color: PoniConfig.colText
+                    }
+
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 46
+                        height: 16
+                        radius: PoniConfig.activeTheme.sharp ? 3 : 8
+                        color: PoniConfig.idleLook === "eyes" ? Qt.rgba(48/255, 209/255, 88/255, 0.2) : PoniConfig.colSurface
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: PoniConfig.idleLook === "eyes" ? "Active" : "Set Eyes"
+                            font.family: PoniConfig.fontFamily
+                            font.pixelSize: 9
+                            font.weight: Font.DemiBold
+                            color: PoniConfig.idleLook === "eyes" ? PoniConfig.colGreen : PoniConfig.colTextDim
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                PoniConfig.idleLook = "eyes";
+                                PoniConfig.saveSettings();
+                            }
+                        }
+                    }
+                }
+
+                Row {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Keep Eyes visible while playing music"
+                        font.family: PoniConfig.fontFamily
+                        font.pixelSize: 10
+                        color: PoniConfig.colTextDim
+                    }
+
+                    PoniSwitch {
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: PoniConfig.eyesDuringMedia
+                        onToggled: val => { PoniConfig.eyesDuringMedia = val; PoniConfig.saveSettings(); }
+                    }
+                }
+            }
+
+            Flickable {
+                width: parent.width
+                height: 138
+                clip: true
+                contentWidth: width
+                contentHeight: eyeStyleGrid.height
+                boundsBehavior: Flickable.StopAtBounds
+
+                Grid {
+                    id: eyeStyleGrid
+                    width: parent.width
+                    columns: 5
+                    columnSpacing: 6
+                    rowSpacing: 6
+
+                    Repeater {
+                        model: PoniConfig.eyeStyles
+                        Rectangle {
+                            required property var modelData
+                            property bool sel: PoniConfig.eyeStyle === modelData.id
+                            width: (eyeStyleGrid.width - 24) / 5
+                            height: 26
+                            radius: PoniConfig.activeTheme.sharp ? 3 : 10
+                            color: sel ? PoniConfig.colAccent : PoniConfig.colSurface
+
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: 7
+                                anchors.rightMargin: 6
+                                spacing: 6
+
+                                Canvas {
+                                    width: 14
+                                    height: 14
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    property string stId: modelData.id
+                                    Component.onCompleted: requestPaint()
+                                    onPaint: {
+                                        var ctx = getContext("2d");
+                                        ctx.clearRect(0, 0, 14, 14);
+                                        var cx = 7, cy = 7;
+                                        if (stId === "capsule") {
+                                            ctx.fillStyle = "#ffffff";
+                                            ctx.fillRect(3, 3, 3, 8); ctx.fillRect(8, 3, 3, 8);
+                                        } else if (stId === "terminator") {
+                                            ctx.fillStyle = "#f8fafc";
+                                            ctx.beginPath(); ctx.arc(4, cy, 2.4, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#ef4444";
+                                            ctx.beginPath(); ctx.arc(10, cy, 3.0, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#ffffff";
+                                            ctx.beginPath(); ctx.arc(10, cy, 1.0, 0, Math.PI * 2); ctx.fill();
+                                        } else if (stId === "sharingan" || stId === "rinnegan") {
+                                            ctx.fillStyle = stId === "sharingan" ? "#dc2626" : "#a855f7";
+                                            ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.strokeStyle = "#111"; ctx.lineWidth = 1;
+                                            ctx.beginPath(); ctx.arc(cx, cy, 2.8, 0, Math.PI * 2); ctx.stroke();
+                                        } else if (stId === "cat") {
+                                            ctx.fillStyle = "#facc15";
+                                            ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#000"; ctx.fillRect(6, 3, 2, 8);
+                                        } else if (stId === "cyber" || stId === "cyclops") {
+                                            ctx.fillStyle = stId === "cyclops" ? "#ef4444" : "#22d3ee";
+                                            ctx.fillRect(1, 5, 12, 4);
+                                        } else if (stId === "kawaii") {
+                                            ctx.fillStyle = "#111827";
+                                            ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#fff";
+                                            ctx.beginPath(); ctx.arc(5, 5, 1.8, 0, Math.PI * 2); ctx.fill();
+                                        } else if (stId === "heart") {
+                                            ctx.fillStyle = "#fb7185"; ctx.font = "bold 11px sans-serif";
+                                            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                                            ctx.fillText("♥", cx, cy + 1);
+                                        } else if (stId === "star") {
+                                            ctx.fillStyle = "#fde047"; ctx.font = "bold 11px sans-serif";
+                                            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                                            ctx.fillText("✦", cx, cy + 1);
+                                        } else if (stId === "dollar") {
+                                            ctx.fillStyle = "#4ade80"; ctx.font = "bold 11px monospace";
+                                            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                                            ctx.fillText("$", cx, cy + 1);
+                                        } else if (stId === "matrix") {
+                                            ctx.fillStyle = "#4ade80"; ctx.font = "bold 10px monospace";
+                                            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                                            ctx.fillText("01", cx, cy + 1);
+                                        } else if (stId === "xdead") {
+                                            ctx.fillStyle = "#f87171"; ctx.font = "bold 11px monospace";
+                                            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                                            ctx.fillText("X", cx, cy + 1);
+                                        } else if (stId === "spiral") {
+                                            ctx.strokeStyle = "#e879f9"; ctx.lineWidth = 1.4;
+                                            ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, Math.PI * 1.6); ctx.stroke();
+                                            ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 1.5); ctx.stroke();
+                                        } else if (stId === "alien") {
+                                            ctx.fillStyle = "#4ade80";
+                                            ctx.beginPath(); ctx.ellipse(cx, cy, 3.5, 5, 0.3, 0, Math.PI * 2); ctx.fill();
+                                        } else if (stId === "robot") {
+                                            ctx.fillStyle = "#38bdf8"; ctx.fillRect(2, 2, 10, 10);
+                                            ctx.fillStyle = "#082f49"; ctx.fillRect(4, 6, 6, 2);
+                                        } else if (stId === "wink") {
+                                            ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.8;
+                                            ctx.beginPath(); ctx.arc(cx, cy + 2, 4, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+                                        } else if (stId === "sleepy") {
+                                            ctx.fillStyle = "#fff";
+                                            ctx.beginPath(); ctx.arc(cx, cy + 1, 4.5, 0, Math.PI); ctx.fill();
+                                        } else if (stId === "angry") {
+                                            ctx.fillStyle = "#fff";
+                                            ctx.save(); ctx.translate(cx, cy); ctx.rotate(0.35);
+                                            ctx.fillRect(-5, -2, 10, 4); ctx.restore();
+                                        } else if (stId === "vector" || stId === "emo" || stId === "cozmo") {
+                                            ctx.fillStyle = stId === "emo" ? "#818cf8" : (stId === "cozmo" ? "#38bdf8" : "#22d3ee");
+                                            ctx.fillRect(2, 4, 4, 6); ctx.fillRect(8, 4, 4, 6);
+                                        } else if (stId === "happy_arc" || stId === "uwu") {
+                                            ctx.strokeStyle = stId === "uwu" ? "#f472b6" : "#fde047"; ctx.lineWidth = 1.6;
+                                            ctx.beginPath();
+                                            if (stId === "uwu") ctx.arc(cx, cy - 1, 4, 0.2, Math.PI - 0.2);
+                                            else ctx.arc(cx, cy + 2, 4, Math.PI * 1.15, Math.PI * 1.85);
+                                            ctx.stroke();
+                                        } else if (stId === "curious") {
+                                            ctx.fillStyle = "#fff"; ctx.fillRect(2, 3, 4, 8); ctx.fillRect(8, 6, 4, 4);
+                                        } else if (stId === "shocked") {
+                                            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(cx, cy, 1.3, 0, Math.PI * 2); ctx.fill();
+                                        } else if (stId === "dizzy") {
+                                            ctx.strokeStyle = "#fde047"; ctx.lineWidth = 1.4;
+                                            ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, Math.PI * 1.4); ctx.stroke();
+                                            ctx.beginPath(); ctx.arc(cx, cy, 2, 1, Math.PI * 2.2); ctx.stroke();
+                                        } else if (stId === "laser") {
+                                            ctx.fillStyle = "#ef4444"; ctx.fillRect(0, 5, 14, 4);
+                                            ctx.fillStyle = "#fecaca"; ctx.fillRect(0, 6, 14, 2);
+                                        } else if (stId === "demon" || stId === "fox") {
+                                            ctx.fillStyle = stId === "demon" ? "#dc2626" : "#fb923c";
+                                            ctx.save(); ctx.translate(cx, cy); ctx.rotate(0.4); ctx.fillRect(-5, -2, 10, 4); ctx.restore();
+                                        } else if (stId === "byakugan") {
+                                            ctx.fillStyle = "#f1f5f9"; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, 2.4, 0, Math.PI * 2); ctx.stroke();
+                                        } else if (stId === "mangekyo" || stId === "geass") {
+                                            ctx.fillStyle = stId === "geass" ? "#f43f5e" : "#ef4444";
+                                            ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+                                        } else if (stId === "gojo" || stId === "sans") {
+                                            ctx.fillStyle = stId === "gojo" ? "#7dd3fc" : "#38bdf8";
+                                            ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, Math.PI * 2); ctx.fill();
+                                        } else if (stId === "pacman") {
+                                            ctx.fillStyle = "#facc15"; ctx.beginPath(); ctx.moveTo(cx, cy);
+                                            ctx.arc(cx, cy, 5, 0.5, Math.PI * 2 - 0.5); ctx.closePath(); ctx.fill();
+                                        } else if (stId === "invader") {
+                                            ctx.fillStyle = "#4ade80"; ctx.fillRect(2, 4, 10, 6);
+                                            ctx.fillStyle = "#052e16"; ctx.fillRect(4, 6, 2, 2); ctx.fillRect(8, 6, 2, 2);
+                                        } else if (stId === "crt") {
+                                            ctx.fillStyle = "#ffb000"; ctx.fillRect(3, 3, 8, 8);
+                                            ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fillRect(3, 6, 8, 1); ctx.fillRect(3, 8, 8, 1);
+                                        } else if (stId === "vapor") {
+                                            ctx.fillStyle = "#ff71ce"; ctx.fillRect(3, 3, 8, 4);
+                                            ctx.fillStyle = "#01cdfe"; ctx.fillRect(3, 7, 8, 4);
+                                        } else if (stId === "glitch") {
+                                            ctx.fillStyle = "#ef4444"; ctx.fillRect(2, 4, 5, 6);
+                                            ctx.fillStyle = "#22d3ee"; ctx.fillRect(7, 4, 5, 6);
+                                            ctx.fillStyle = "#fff"; ctx.fillRect(4, 4, 6, 6);
+                                        } else if (stId === "loading") {
+                                            ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 1.8;
+                                            ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 1.3); ctx.stroke();
+                                        } else if (stId === "music_note") {
+                                            ctx.fillStyle = "#38bdf8"; ctx.font = "bold 11px sans-serif";
+                                            ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("♪", cx, cy + 1);
+                                        } else if (stId === "fire") {
+                                            ctx.fillStyle = "#f97316"; ctx.beginPath(); ctx.arc(cx, cy + 1, 4.5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#fde047"; ctx.beginPath(); ctx.arc(cx, cy + 2, 2.2, 0, Math.PI * 2); ctx.fill();
+                                        } else if (stId === "bolt") {
+                                            ctx.fillStyle = "#facc15"; ctx.font = "bold 11px sans-serif";
+                                            ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⚡", cx, cy + 1);
+                                        } else if (stId === "moon") {
+                                            ctx.fillStyle = "#fde68a"; ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#09090b"; ctx.beginPath(); ctx.arc(cx + 2, cy - 1, 3.8, 0, Math.PI * 2); ctx.fill();
+                                        } else if (stId === "sunglasses") {
+                                            ctx.fillStyle = "#18181b"; ctx.fillRect(1, 5, 5, 4); ctx.fillRect(8, 5, 5, 4);
+                                            ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 1; ctx.strokeRect(1, 5, 5, 4); ctx.strokeRect(8, 5, 5, 4);
+                                        } else if (stId === "monocle") {
+                                            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy, 3.2, 0, Math.PI * 2); ctx.fill();
+                                            ctx.strokeStyle = "#eab308"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.stroke();
+                                        } else if (stId === "cry") {
+                                            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy - 1, 3.5, 0, Math.PI * 2); ctx.fill();
+                                            ctx.fillStyle = "#38bdf8"; ctx.fillRect(cx - 1, cy + 3, 2, 4);
+                                        } else if (stId === "love_struck") {
+                                            ctx.fillStyle = "#ec4899"; ctx.font = "bold 11px sans-serif";
+                                            ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("♥", cx, cy + 1);
+                                        } else {
+                                            ctx.fillStyle = "#fff"; ctx.fillRect(2, 5, 10, 4);
+                                            ctx.fillStyle = "#111"; ctx.fillRect(8, 5, 3, 4);
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    width: parent.width - 20
+                                    elide: Text.ElideRight
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: modelData.label
+                                    font.family: PoniConfig.fontFamily
+                                    font.pixelSize: 10
+                                    font.weight: sel ? Font.DemiBold : Font.Normal
+                                    color: sel ? "#ffffff" : PoniConfig.colTextDim
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    PoniConfig.eyeStyle = modelData.id;
+                                    PoniConfig.idleLook = "eyes";
+                                    PoniConfig.saveSettings();
+                                }
+                            }
                         }
                     }
                 }

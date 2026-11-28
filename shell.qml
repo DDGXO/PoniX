@@ -86,10 +86,20 @@ ShellRoot {
                 Hyprland.refreshToplevels();
             }
 
+            Connections {
+                target: Hyprland
+                function onRawEvent(ev) {
+                    if (PoniConfig.theme !== "liquid" || !overlay.visible) return;
+                    var n = ev.name;
+                    if (n === "openwindow" || n === "closewindow" || n === "activewindow" || n === "activewindowv2" || n === "fullscreen" || n === "movewindow" || n === "workspace" || n === "focusedmon" || n === "changefloatingmode") {
+                        Hyprland.refreshToplevels();
+                    }
+                }
+            }
+
             mask: islandRegion
             BackgroundEffect.blurRegion: ((PoniConfig.theme === "liquid" && !liveBackdrop.hasContent) || PoniConfig.theme === "glass") && PoniConfig.glassBlur ? blurRegion : null
 
-            // Find visible Hyprland toplevel behind the island on this monitor for real-time 60fps refraction
             readonly property var hyprMonitor: {
                 var mons = Hyprland.monitors ? Hyprland.monitors.values : [];
                 for (var i = 0; i < mons.length; i++) {
@@ -102,16 +112,37 @@ ShellRoot {
                 if (PoniConfig.theme !== "liquid" || !overlay.visible) return null;
                 var mon = hyprMonitor;
                 var activeWsId = (mon && mon.activeWorkspace) ? mon.activeWorkspace.id : -1;
+                var monX = mon ? mon.x : 0;
+                var monY = mon ? mon.y : 0;
                 var list = Hyprland.toplevels ? Hyprland.toplevels.values : [];
+                var activeOverlap = null;
+                var anyOverlap = null;
+                var activeFallback = null;
                 var fallback = null;
+                var ix0 = island.x;
+                var ix1 = island.x + island.width;
+                var iy0 = island.y;
+                var iy1 = island.y + island.height;
                 for (var i = 0; i < list.length; i++) {
                     var tl = list[i];
                     if (!tl || !tl.wayland) continue;
                     if (activeWsId >= 0 && tl.workspace && tl.workspace.id !== activeWsId) continue;
-                    if (tl.activated) return tl;
+                    var ipc = tl.lastIpcObject;
+                    var overlaps = false;
+                    if (ipc && ipc.at && ipc.size) {
+                        var wx0 = ipc.at[0] - monX;
+                        var wy0 = ipc.at[1] - monY;
+                        var wx1 = wx0 + ipc.size[0];
+                        var wy1 = wy0 + ipc.size[1];
+                        overlaps = (wx0 < ix1 && wx1 > ix0 && wy0 < iy1 && wy1 > iy0);
+                    }
+                    if (tl.fullscreen && overlaps) return tl;
+                    if (overlaps && tl.activated && !activeOverlap) activeOverlap = tl;
+                    if (overlaps && !anyOverlap) anyOverlap = tl;
+                    if (tl.activated && !activeFallback) activeFallback = tl;
                     if (!fallback) fallback = tl;
                 }
-                return fallback;
+                return activeOverlap || anyOverlap || activeFallback || fallback;
             }
 
             readonly property real winLocalX: {
@@ -146,18 +177,18 @@ ShellRoot {
 
             Region {
                 id: islandRegion
-                x: island.x
+                x: island.x + (island.isExpanded ? 0 : island.shoulder)
                 y: island.y
-                width: island.width
+                width: island.isExpanded ? island.width : island.currentWidth
                 height: island.height
             }
 
             Region {
                 id: blurRegion
                 readonly property int inset: Math.max(2, Math.round(island.currentRadius * 0.28))
-                x: island.x + inset
+                x: island.x + island.shoulder + inset
                 y: island.y + inset
-                width: Math.max(0, island.width - inset * 2)
+                width: Math.max(0, island.currentWidth - inset * 2)
                 height: Math.max(0, island.height - inset * 2)
             }
 

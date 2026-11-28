@@ -37,10 +37,16 @@ Item {
                     }
 
                     Image {
+                        id: artImg
                         anchors.fill: parent
                         source: PoniMedia.displayArtUrl
                         fillMode: Image.PreserveAspectCrop
-                        visible: PoniMedia.displayArtUrl.length > 0
+                        visible: PoniMedia.displayArtUrl.length > 0 && status !== Image.Error
+                        onStatusChanged: {
+                            if (status === Image.Error && PoniMedia.displayArtUrl.length > 0) {
+                                PoniMedia.reportArtError();
+                            }
+                        }
                     }
 
                     PoniIcon {
@@ -48,7 +54,7 @@ Item {
                         name: "music"
                         size: 32
                         color: PoniConfig.colTextDim
-                        visible: PoniMedia.displayArtUrl.length === 0
+                        visible: PoniMedia.displayArtUrl.length === 0 || artImg.status === Image.Error
                     }
                 }
 
@@ -70,7 +76,7 @@ Item {
 
                     Text {
                         width: parent.width
-                        text: PoniMedia.displayArtist || "Start a track in any player"
+                        text: PoniMedia.displayArtist || (PoniMedia.hasMedia ? (PoniMedia.album || "Playing") : "Start a track in any player")
                         font.family: PoniConfig.fontFamily
                         font.pixelSize: 11
                         color: PoniConfig.colTextDim

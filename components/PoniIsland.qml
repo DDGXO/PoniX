@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Shapes
+import QtQuick.Effects
 import "../services"
 import "../pages"
 
@@ -89,11 +91,20 @@ Item {
     property real currentWidth: isExpanded ? expandedWidth : restingWidth
     property real currentHeight: isExpanded ? expandedHeight : restingHeight
     property real currentRadius: {
-        if (PoniConfig.activeTheme.sharp) return isExpanded ? 5 : 3;
-        return isExpanded ? 20 : (restingHeight / 2);
+        if (PoniConfig.activeTheme.sharp) return isExpanded ? 18 : Math.min(13, restingHeight / 2);
+        return isExpanded ? 22 : (restingHeight / 2);
+    }
+    property real shoulder: {
+        if (PoniConfig.isFloating) return 0;
+        if (PoniConfig.idleLook === "hidden" && !isExpanded && !islandMouseArea.containsMouse) return 0;
+        return isExpanded ? 14 : 10;
     }
 
-    implicitWidth: currentWidth
+    Behavior on shoulder {
+        NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
+    }
+
+    implicitWidth: currentWidth + shoulder * 2
     implicitHeight: currentHeight
 
     signal closeRequested()
@@ -158,43 +169,232 @@ Item {
         }
     }
 
-    Rectangle {
+    Item {
         id: islandBody
         anchors.fill: parent
-        radius: root.currentRadius
-        color: {
-            if (PoniConfig.idleLook === "hidden" && !root.isExpanded && !islandMouseArea.containsMouse) return "transparent";
+
+        readonly property bool isHiddenResting: PoniConfig.idleLook === "hidden" && !root.isExpanded && !islandMouseArea.containsMouse
+        readonly property real maskRadius: Math.min(root.currentRadius, height * 0.5, Math.max(0, width - root.shoulder * 2) * 0.5)
+        readonly property color fillColor: {
+            if (isHiddenResting) return "transparent";
             if (PoniConfig.theme === "glass") return Qt.rgba(12/255, 14/255, 18/255, PoniConfig.glassOpacity);
             if (PoniConfig.theme === "liquid") return "transparent";
             return PoniConfig.colBg;
         }
-        border.color: {
-            if (PoniConfig.idleLook === "hidden" && !root.isExpanded && !islandMouseArea.containsMouse) return "transparent";
+        readonly property color strokeColor: {
+            if (isHiddenResting) return "transparent";
             if (PoniConfig.theme === "glass") return Qt.rgba(1, 1, 1, 0.16);
             if (PoniConfig.theme === "liquid") return Qt.rgba(1, 1, 1, 0.26);
             return PoniConfig.colBorder;
         }
-        border.width: PoniConfig.activeTheme.sharp ? 2 : 1
-        clip: true
 
-        // Real-time Liquid Glass Refraction Shader (60fps ScreencopyView + Snell's Law + Chromatic Dispersion)
+        Item {
+            id: notchMaskItem
+            anchors.fill: parent
+            visible: PoniConfig.theme !== "liquid"
+
+            Shape {
+                anchors.fill: parent
+                visible: root.shoulder > 0.5
+                preferredRendererType: Shape.CurveRenderer
+
+                ShapePath {
+                    fillColor: "#ffffff"
+                    strokeColor: "transparent"
+                    strokeWidth: 0
+                    startX: 0
+                    startY: 0
+
+                    PathArc {
+                        x: root.shoulder
+                        y: root.shoulder
+                        radiusX: root.shoulder
+                        radiusY: root.shoulder
+                        direction: PathArc.Clockwise
+                    }
+                    PathLine {
+                        x: root.shoulder
+                        y: Math.max(root.shoulder, notchMaskItem.height - islandBody.maskRadius)
+                    }
+                    PathArc {
+                        x: root.shoulder + islandBody.maskRadius
+                        y: notchMaskItem.height
+                        radiusX: islandBody.maskRadius
+                        radiusY: islandBody.maskRadius
+                        direction: PathArc.Counterclockwise
+                    }
+                    PathLine {
+                        x: Math.max(root.shoulder + islandBody.maskRadius, notchMaskItem.width - root.shoulder - islandBody.maskRadius)
+                        y: notchMaskItem.height
+                    }
+                    PathArc {
+                        x: notchMaskItem.width - root.shoulder
+                        y: Math.max(root.shoulder, notchMaskItem.height - islandBody.maskRadius)
+                        radiusX: islandBody.maskRadius
+                        radiusY: islandBody.maskRadius
+                        direction: PathArc.Counterclockwise
+                    }
+                    PathLine {
+                        x: notchMaskItem.width - root.shoulder
+                        y: root.shoulder
+                    }
+                    PathArc {
+                        x: notchMaskItem.width
+                        y: 0
+                        radiusX: root.shoulder
+                        radiusY: root.shoulder
+                        direction: PathArc.Clockwise
+                    }
+                    PathLine {
+                        x: 0
+                        y: 0
+                    }
+                }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: root.shoulder <= 0.5
+                radius: islandBody.maskRadius
+                color: "#ffffff"
+            }
+        }
+
+        readonly property bool useSceneLiquid: PoniConfig.dioramaPixelLiquid && (PoniConfig.theme === "diorama" || PoniConfig.theme === "pixel")
+
+        ShaderEffectSource {
+            id: notchMaskTex
+            sourceItem: notchMaskItem
+            live: PoniConfig.theme !== "liquid"
+            hideSource: true
+        }
+
         ShaderEffect {
             anchors.fill: parent
-            visible: PoniConfig.theme === "liquid"
+            visible: PoniConfig.theme === "liquid" || islandBody.useSceneLiquid
             property vector2d uResolution: Qt.vector2d(width, height)
-            property real uRadius: root.currentRadius
-            property real uBezel: (root.isExpanded ? 46.0 : 15.0) * PoniConfig.liquidBezelScale
-            property real uThickness: root.isExpanded ? 68.0 : 30.0
-            property real uIOR: 2.6
+            property real uRadius: islandBody.maskRadius
+            property real uBezel: (root.isExpanded ? 24.0 : 14.0) * PoniConfig.liquidBezelScale
+            property real uThickness: root.isExpanded ? 54.0 : 48.0
+            property real uIOR: 1.52
             property real uSpecular: PoniConfig.liquidSpecular
             property real uTint: 0.12
-            property real uAlpha: PoniConfig.glassOpacity
+            property real uAlpha: islandBody.useSceneLiquid ? (PoniConfig.glassOpacity * 0.25) : PoniConfig.glassOpacity
             property real uHasBg: root.backdropHasContent ? 1.0 : 0.0
             property vector2d uWinOffset: root.backdropOffset
             property vector2d uWinSize: root.backdropSize
             property real uBlur: PoniConfig.glassBlur ? 6.5 : 1.0
+            property real uShoulder: root.shoulder
             property variant uBgTex: root.backdropSource
             fragmentShader: "../shaders/liquid_glass.frag.qsb"
+        }
+
+        Item {
+            id: islandBgLayer
+            anchors.fill: parent
+            visible: PoniConfig.theme !== "liquid"
+            opacity: islandBody.useSceneLiquid ? PoniConfig.glassOpacity : 1.0
+            layer.enabled: PoniConfig.theme !== "liquid"
+            layer.effect: MultiEffect {
+                maskEnabled: true
+                maskSource: notchMaskTex
+                maskThresholdMin: 0.48
+                maskSpreadAtMin: 0.12
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: !islandBody.useSceneLiquid
+                color: islandBody.fillColor
+            }
+
+            DioramaCanvas {
+                anchors.fill: parent
+                visible: PoniConfig.theme === "diorama"
+                pixelMode: false
+                isExpandedMode: root.isExpanded
+                opacity: islandBody.useSceneLiquid ? 1.0 : (root.isExpanded ? 0.82 : 0.96)
+            }
+
+            PixelArtSceneCanvas {
+                anchors.fill: parent
+                visible: PoniConfig.theme === "pixel"
+                isExpandedMode: root.isExpanded
+                opacity: islandBody.useSceneLiquid ? 1.0 : (root.isExpanded ? 0.85 : 0.98)
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: !islandBody.useSceneLiquid && root.isExpanded && (PoniConfig.theme === "diorama" || PoniConfig.theme === "pixel")
+                color: Qt.rgba(0, 0, 0, 0.16)
+            }
+        }
+
+        Shape {
+            anchors.fill: parent
+            z: 20
+            visible: root.shoulder > 0.5 && !islandBody.isHiddenResting
+            preferredRendererType: Shape.CurveRenderer
+
+            ShapePath {
+                fillColor: "transparent"
+                strokeColor: islandBody.strokeColor
+                strokeWidth: 1
+                capStyle: ShapePath.RoundCap
+                startX: 0
+                startY: 0.5
+
+                PathArc {
+                    x: root.shoulder + 0.5
+                    y: root.shoulder
+                    radiusX: root.shoulder
+                    radiusY: root.shoulder
+                    direction: PathArc.Clockwise
+                }
+                PathLine {
+                    x: root.shoulder + 0.5
+                    y: Math.max(root.shoulder, islandBody.height - islandBody.maskRadius)
+                }
+                PathArc {
+                    x: root.shoulder + islandBody.maskRadius
+                    y: islandBody.height - 0.5
+                    radiusX: Math.max(0, islandBody.maskRadius - 0.5)
+                    radiusY: Math.max(0, islandBody.maskRadius - 0.5)
+                    direction: PathArc.Counterclockwise
+                }
+                PathLine {
+                    x: Math.max(root.shoulder + islandBody.maskRadius, islandBody.width - root.shoulder - islandBody.maskRadius)
+                    y: islandBody.height - 0.5
+                }
+                PathArc {
+                    x: islandBody.width - root.shoulder - 0.5
+                    y: Math.max(root.shoulder, islandBody.height - islandBody.maskRadius)
+                    radiusX: Math.max(0, islandBody.maskRadius - 0.5)
+                    radiusY: Math.max(0, islandBody.maskRadius - 0.5)
+                    direction: PathArc.Counterclockwise
+                }
+                PathLine {
+                    x: islandBody.width - root.shoulder - 0.5
+                    y: root.shoulder
+                }
+                PathArc {
+                    x: islandBody.width
+                    y: 0.5
+                    radiusX: root.shoulder
+                    radiusY: root.shoulder
+                    direction: PathArc.Clockwise
+                }
+            }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            z: 20
+            visible: root.shoulder <= 0.5 && !islandBody.isHiddenResting
+            radius: islandBody.maskRadius
+            color: "transparent"
+            border.color: islandBody.strokeColor
+            border.width: 1
         }
 
         HoverHandler {
@@ -208,31 +408,14 @@ Item {
             }
         }
 
-        DioramaCanvas {
-            anchors.fill: parent
-            visible: PoniConfig.theme === "diorama"
-            pixelMode: false
-            isExpandedMode: root.isExpanded
-            opacity: root.isExpanded ? 0.82 : 0.96
-        }
-
-        PixelArtSceneCanvas {
-            anchors.fill: parent
-            visible: PoniConfig.theme === "pixel"
-            isExpandedMode: root.isExpanded
-            opacity: root.isExpanded ? 0.85 : 0.98
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            visible: root.isExpanded && (PoniConfig.theme === "diorama" || PoniConfig.theme === "pixel")
-            color: Qt.rgba(0, 0, 0, 0.16)
-        }
-
-        // ==================== RESTING / CLOSED NOTCH ====================
         Item {
             id: closedViewContainer
-            anchors.fill: parent
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: root.shoulder
+            anchors.rightMargin: root.shoulder
             visible: !root.isExpanded
             opacity: root.isExpanded ? 0.0 : 1.0
 
@@ -290,10 +473,14 @@ Item {
             }
         }
 
-        // ==================== EXPANDED ISLAND ====================
         Item {
             id: expandedViewContainer
-            anchors.fill: parent
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: root.shoulder
+            anchors.rightMargin: root.shoulder
             visible: root.isExpanded
             opacity: root.isExpanded ? 1.0 : 0.0
 

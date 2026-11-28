@@ -42,7 +42,8 @@ Singleton {
     readonly property string displayTitle: cleanedMeta.title || title
     readonly property string displayArtist: cleanedMeta.artist || artist
     property string fetchedArtUrl: ""
-    readonly property string displayArtUrl: artUrl.length > 0 ? artUrl : fetchedArtUrl
+    property bool artBroken: false
+    readonly property string displayArtUrl: (artUrl.length > 0 && !artBroken) ? artUrl : fetchedArtUrl
     readonly property real rawPosition: activePlayer ? activePlayer.position : 0
     property real position: 0
     readonly property real length: activePlayer ? activePlayer.length : 0
@@ -63,6 +64,7 @@ Singleton {
     property bool lyricsSynced: false
     property string lastFetchedKey: ""
     property string pendingSearchQuery: ""
+    property string pendingPlainFallback: ""
 
     function targetPlayerArg() {
         if (!activePlayer || !activePlayer.dbusName) return "";
@@ -222,31 +224,30 @@ Singleton {
         if (key === lastFetchedKey) return;
         lastFetchedKey = key;
 
-        root.position = (root.rawPosition < 5) ? root.rawPosition : 0;
+        root.position = root.rawPosition >= 0 ? root.rawPosition : 0;
         trackStartSyncTimer.restart();
+        if (!posSyncProc.running && root.activePlayer) {
+            var syncName = root.targetPlayerArg();
+            posSyncProc.command = syncName.length > 0
+                ? ["playerctl", "-p", syncName, "position"]
+                : ["playerctl", "position"];
+            posSyncProc.running = true;
+        }
         lyricsLines = [];
         currentLyricIndex = -1;
         currentLyricText = "";
         currentLyricRoman = "";
         lyricsSynced = false;
         lyricsLoading = true;
+        pendingPlainFallback = "";
 
         var cleaned = cleanMetadata(title, artist);
         var dur = Math.round(length);
 
         root.fetchedArtUrl = "";
+        root.artBroken = false;
         if (root.artUrl.length === 0) {
-            var artQ = (cleaned.artist.length > 0 ? (cleaned.artist + " ") : "") + cleaned.title;
-            root.pendingArtQuery = artQ.trim();
-            root.pendingArtTitleOnly = cleaned.title.trim();
-            if (root.pendingArtQuery.length > 0 || root.activePlayer) {
-                var pName = root.targetPlayerArg();
-                artFetchProc.stage = 0;
-                artFetchProc.command = pName.length > 0
-                    ? ["playerctl", "-p", pName, "metadata", "xesam:url"]
-                    : ["playerctl", "metadata", "xesam:url"];
-                artFetchProc.running = true;
-            }
+            startArtFallback();
         }
 
         if (cleaned.artist.length > 0) {
@@ -306,8 +307,36 @@ Singleton {
             else if (diff > 15) score -= 50;
         }
 
-        if (rec.syncedLyrics && rec.syncedLyrics.trim().length > 0) score += 15;
+        if (rec.syncedLyrics && rec.syncedLyrics.trim().length > 0) score += 45;
         return score;
+    }
+
+    function startArtFallback() {
+        var cleaned = cleanMetadata(title, artist);
+        var artQ = (cleaned.artist.length > 0 ? (cleaned.artist + " ") : "") + cleaned.title;
+        root.pendingArtQuery = artQ.trim();
+        root.pendingArtTitleOnly = cleaned.title.trim();
+        if (root.pendingArtQuery.length === 0 && root.pendingArtTitleOnly.length === 0 && !root.activePlayer) return;
+        var pName = root.targetPlayerArg();
+        artFetchProc.stage = 0;
+        artFetchProc.command = pName.length > 0
+            ? ["playerctl", "-p", pName, "metadata", "xesam:url"]
+            : ["playerctl", "metadata", "xesam:url"];
+        artFetchProc.running = true;
+    }
+
+    function reportArtError() {
+        if (root.artUrl.length > 0 && !root.artBroken) {
+            root.artBroken = true;
+            if (root.fetchedArtUrl.length === 0) startArtFallback();
+        } else if (root.fetchedArtUrl.indexOf("hqdefault.jpg") >= 0) {
+            root.fetchedArtUrl = root.fetchedArtUrl.replace("hqdefault.jpg", "mqdefault.jpg");
+        } else if (artFetchProc.stage < 3 && (root.pendingArtQuery.length > 0 || root.pendingArtTitleOnly.length > 0)) {
+            artFetchProc.stage = 3;
+            var q = root.pendingArtQuery.length > 0 ? root.pendingArtQuery : root.pendingArtTitleOnly;
+            artFetchProc.command = ["curl", "-s", "--max-time", "5", "-A", "Mozilla/5.0", "https://www.youtube.com/results?search_query=" + encodeURIComponent(q)];
+            artFetchProc.running = true;
+        }
     }
 
     function scoreRecord(rec, wantTitle, wantArtist, playingDur) {
@@ -329,20 +358,25 @@ Singleton {
 
     Process {
         id: artFetchProc
-        property int stage: 0 // 0=mpris xesam:url, 1=youtube search, 2=itunes, 3=deezer
+        property int stage: 0
         stdout: StdioCollector {
             onStreamFinished: {
                 var found = "";
                 var raw = text.trim();
-                if (artFetchProc.stage === 0 || artFetchProc.stage === 1) {
+                if (artFetchProc.stage === 0 || artFetchProc.stage === 3) {
                     var vid = root.extractYoutubeId(raw);
                     if (vid.length > 0) {
                         found = "https://i.ytimg.com/vi/" + vid + "/hqdefault.jpg";
                     }
+                } else if (artFetchProc.stage === 4) {
+                    var firstId = raw.split("\n")[0].trim();
+                    if (/^[A-Za-z0-9_-]{11}$/.test(firstId)) {
+                        found = "https://i.ytimg.com/vi/" + firstId + "/hqdefault.jpg";
+                    }
                 } else {
                     try {
                         var res = JSON.parse(raw);
-                        if (artFetchProc.stage === 3) {
+                        if (artFetchProc.stage === 2) {
                             if (res && res.data && res.data.length > 0 && res.data[0].album) {
                                 found = res.data[0].album.cover_big || res.data[0].album.cover_medium || "";
                             }
@@ -359,27 +393,24 @@ Singleton {
                     return;
                 }
 
-                if (artFetchProc.stage === 0 && root.pendingArtQuery.length > 0) {
+                var q = root.pendingArtQuery.length > 0 ? root.pendingArtQuery : root.pendingArtTitleOnly;
+                if (q.length === 0) return;
+
+                if (artFetchProc.stage === 0) {
                     artFetchProc.stage = 1;
-                    artFetchProc.command = [
-                        "curl", "-s", "--max-time", "5",
-                        "-A", "Mozilla/5.0",
-                        "https://www.youtube.com/results?search_query=" + encodeURIComponent(root.pendingArtQuery)
-                    ];
+                    artFetchProc.command = ["curl", "-s", "--max-time", "5", "https://itunes.apple.com/search?term=" + encodeURIComponent(q) + "&entity=song&limit=1"];
                     artFetchProc.running = true;
-                } else if (artFetchProc.stage === 1 && root.pendingArtQuery.length > 0) {
+                } else if (artFetchProc.stage === 1) {
                     artFetchProc.stage = 2;
-                    artFetchProc.command = [
-                        "curl", "-s", "--max-time", "5",
-                        "https://itunes.apple.com/search?term=" + encodeURIComponent(root.pendingArtQuery) + "&entity=song&limit=1"
-                    ];
+                    artFetchProc.command = ["curl", "-s", "--max-time", "5", "https://api.deezer.com/search?q=" + encodeURIComponent(q) + "&limit=1"];
                     artFetchProc.running = true;
-                } else if (artFetchProc.stage === 2 && root.pendingArtQuery.length > 0) {
+                } else if (artFetchProc.stage === 2) {
                     artFetchProc.stage = 3;
-                    artFetchProc.command = [
-                        "curl", "-s", "--max-time", "5",
-                        "https://api.deezer.com/search?q=" + encodeURIComponent(root.pendingArtQuery) + "&limit=1"
-                    ];
+                    artFetchProc.command = ["curl", "-s", "--max-time", "5", "-A", "Mozilla/5.0", "https://www.youtube.com/results?search_query=" + encodeURIComponent(q)];
+                    artFetchProc.running = true;
+                } else if (artFetchProc.stage === 3) {
+                    artFetchProc.stage = 4;
+                    artFetchProc.command = ["yt-dlp", "--no-playlist", "--no-warnings", "--get-id", "ytsearch1:" + q];
                     artFetchProc.running = true;
                 }
             }
@@ -418,23 +449,33 @@ Singleton {
                                     best = r;
                                 }
                             }
-                            if (best) {
+                            if (best && (best.syncedLyrics || root.pendingPlainFallback.length === 0)) {
                                 var lrc = best.syncedLyrics || best.plainLyrics || "";
                                 root.parseLyrics(lrc);
+                            } else if (root.pendingPlainFallback.length > 0) {
+                                root.parseLyrics(root.pendingPlainFallback);
                             } else {
                                 root.lyricsLines = [];
                             }
+                        } else if (root.pendingPlainFallback.length > 0) {
+                            root.parseLyrics(root.pendingPlainFallback);
                         } else {
                             root.lyricsLines = [];
                         }
                     } else {
-                        if (res && (res.syncedLyrics || res.plainLyrics)) {
+                        if (res && res.syncedLyrics) {
                             root.lyricsLoading = false;
-                            root.parseLyrics(res.syncedLyrics || res.plainLyrics || "");
-                        } else if (root.pendingSearchQuery.length > 0) {
-                            root.runSearchFallback(root.pendingSearchQuery);
+                            root.parseLyrics(res.syncedLyrics);
                         } else {
-                            root.lyricsLoading = false;
+                            if (res && res.plainLyrics) root.pendingPlainFallback = res.plainLyrics;
+                            if (root.pendingSearchQuery.length > 0) {
+                                root.runSearchFallback(root.pendingSearchQuery);
+                            } else if (root.pendingPlainFallback.length > 0) {
+                                root.lyricsLoading = false;
+                                root.parseLyrics(root.pendingPlainFallback);
+                            } else {
+                                root.lyricsLoading = false;
+                            }
                         }
                     }
                 } catch(e) {
@@ -615,4 +656,10 @@ Singleton {
 
     onTitleChanged: checkFetchLyrics()
     onArtistChanged: checkFetchLyrics()
+    onArtUrlChanged: {
+        root.artBroken = false;
+        if (root.hasMedia && root.artUrl.length === 0 && root.fetchedArtUrl.length === 0) {
+            startArtFallback();
+        }
+    }
 }

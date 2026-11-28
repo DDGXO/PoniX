@@ -18,6 +18,7 @@ Singleton {
     property real glassOpacity: 0.28
     property real liquidSpecular: 0.72
     property real liquidBezelScale: 1.0
+    property bool dioramaPixelLiquid: false
     property string idleLook: "clock" // clock, eyes, minimal, hidden, status
     property string eyeStyle: "capsule" // 20 eye styles in eyeStyles
     property bool eyesDuringMedia: false
@@ -139,26 +140,56 @@ Singleton {
     ]
 
     readonly property var eyeStyles: [
-        { id: "capsule",    label: "Capsule" },
-        { id: "terminator", label: "Terminator" },
-        { id: "sharingan",  label: "Sharingan" },
-        { id: "rinnegan",   label: "Rinnegan" },
-        { id: "cat",        label: "Cat Slits" },
-        { id: "cyber",      label: "Cyber Visor" },
-        { id: "kawaii",     label: "Kawaii" },
-        { id: "angry",      label: "Angry" },
-        { id: "sleepy",     label: "Sleepy" },
-        { id: "heart",      label: "Heart" },
-        { id: "star",       label: "Star" },
-        { id: "dollar",     label: "Dollar" },
-        { id: "spiral",     label: "Hypno" },
-        { id: "alien",      label: "Alien" },
-        { id: "cyclops",    label: "Cyclops" },
-        { id: "matrix",     label: "Matrix 0/1" },
-        { id: "robot",      label: "LED Bot" },
-        { id: "xdead",      label: "X_X" },
-        { id: "wink",       label: "Wink" },
-        { id: "sus",        label: "Side-Eye" }
+        { id: "capsule",     label: "Capsule" },
+        { id: "terminator",  label: "Terminator" },
+        { id: "sharingan",   label: "Sharingan" },
+        { id: "rinnegan",    label: "Rinnegan" },
+        { id: "cat",         label: "Cat Slits" },
+        { id: "cyber",       label: "Cyber Visor" },
+        { id: "kawaii",      label: "Kawaii" },
+        { id: "angry",       label: "Angry" },
+        { id: "sleepy",      label: "Sleepy" },
+        { id: "heart",       label: "Heart" },
+        { id: "star",        label: "Star" },
+        { id: "dollar",      label: "Dollar" },
+        { id: "spiral",      label: "Hypno" },
+        { id: "alien",       label: "Alien" },
+        { id: "cyclops",     label: "Cyclops" },
+        { id: "matrix",      label: "Matrix 0/1" },
+        { id: "robot",       label: "LED Bot" },
+        { id: "xdead",       label: "X_X" },
+        { id: "wink",        label: "Wink" },
+        { id: "sus",         label: "Side-Eye" },
+        { id: "vector",      label: "Vector" },
+        { id: "emo",         label: "EMO Bot" },
+        { id: "cozmo",       label: "Cozmo" },
+        { id: "happy_arc",   label: "Happy ^ ^" },
+        { id: "uwu",         label: "UwU" },
+        { id: "curious",     label: "Curious" },
+        { id: "shocked",     label: "Shocked" },
+        { id: "dizzy",       label: "Dizzy" },
+        { id: "laser",       label: "Laser" },
+        { id: "demon",       label: "Demon" },
+        { id: "fox",         label: "Kitsune" },
+        { id: "byakugan",    label: "Byakugan" },
+        { id: "mangekyo",    label: "Mangekyo" },
+        { id: "geass",       label: "Geass" },
+        { id: "gojo",        label: "Six Eyes" },
+        { id: "sans",        label: "Sans" },
+        { id: "pacman",      label: "Pac-Man" },
+        { id: "invader",     label: "Invader" },
+        { id: "crt",         label: "Amber CRT" },
+        { id: "vapor",       label: "Vapor" },
+        { id: "glitch",      label: "Glitch" },
+        { id: "loading",     label: "Thinking" },
+        { id: "music_note",  label: "Music" },
+        { id: "fire",        label: "Flame" },
+        { id: "bolt",        label: "Volt" },
+        { id: "moon",        label: "Crescent" },
+        { id: "sunglasses",  label: "Shades" },
+        { id: "monocle",     label: "Monocle" },
+        { id: "cry",         label: "Tears" },
+        { id: "love_struck", label: "Love Glow" }
     ]
 
     readonly property var dioramaScenes: [
@@ -308,7 +339,7 @@ Singleton {
     readonly property color colPurple: "#BF5AF2"
     readonly property color colYellow: "#FFD60A"
 
-    readonly property bool isFloating: theme === "pill" || theme === "diorama" || notchFloating
+    readonly property bool isFloating: theme === "pill" || notchFloating
 
     function isAddonOn(name) {
         return !!root.addons[name];
@@ -468,6 +499,7 @@ Singleton {
             glassOpacity: root.glassOpacity,
             liquidSpecular: root.liquidSpecular,
             liquidBezelScale: root.liquidBezelScale,
+            dioramaPixelLiquid: root.dioramaPixelLiquid,
             idleLook: root.idleLook,
             eyeStyle: root.eyeStyle,
             eyesDuringMedia: root.eyesDuringMedia,
@@ -533,6 +565,7 @@ Singleton {
                     if (s.glassOpacity !== undefined) root.glassOpacity = s.glassOpacity;
                     if (s.liquidSpecular !== undefined) root.liquidSpecular = s.liquidSpecular;
                     if (s.liquidBezelScale !== undefined) root.liquidBezelScale = s.liquidBezelScale;
+                    if (s.dioramaPixelLiquid !== undefined) root.dioramaPixelLiquid = s.dioramaPixelLiquid;
                     if (s.idleLook) root.idleLook = s.idleLook;
                     if (s.eyeStyle) root.eyeStyle = s.eyeStyle;
                     if (s.eyesDuringMedia !== undefined) root.eyesDuringMedia = s.eyesDuringMedia;

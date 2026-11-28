@@ -18,6 +18,7 @@ layout(std140, binding = 0) uniform buf {
     vec2 uWinOffset;
     vec2 uWinSize;
     float uBlur;
+    float uShoulder;
 };
 
 layout(binding = 1) uniform sampler2D uBgTex;
@@ -25,6 +26,31 @@ layout(binding = 1) uniform sampler2D uBgTex;
 float sdRoundedRect(vec2 p, vec2 halfSize, float r) {
     vec2 q = abs(p) - halfSize + r;
     return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+float sdNotchAttached(vec2 pos, vec2 res, float r, float s) {
+    float px = abs(pos.x - res.x * 0.5);
+    float py = pos.y;
+    float halfCore = max(1.0, res.x * 0.5 - s);
+    float rc = min(r, min(halfCore, res.y * 0.5));
+    if (py < s) {
+        if (px > halfCore + s) {
+            return length(vec2(px - (halfCore + s), py));
+        }
+        return s - length(vec2(px - (halfCore + s), py - s));
+    }
+    if (py <= res.y - rc) {
+        return px - halfCore;
+    }
+    vec2 d = vec2(px - (halfCore - rc), py - (res.y - rc));
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - rc;
+}
+
+float sampleSd(vec2 pos, vec2 p, vec2 halfSize, float r) {
+    if (uShoulder > 0.5) {
+        return sdNotchAttached(pos, uResolution, r, uShoulder);
+    }
+    return sdRoundedRect(p, halfSize, r);
 }
 
 float surfaceHeight(float t) {
@@ -60,16 +86,18 @@ vec3 sampleBgBlurred(vec2 uv, float radius) {
 
 void main() {
     vec2 halfSize = uResolution * 0.5;
-    vec2 p = (qt_TexCoord0 - 0.5) * uResolution;
-    float r = min(uRadius, min(halfSize.x, halfSize.y));
+    vec2 pos = qt_TexCoord0 * uResolution;
+    vec2 p = pos - halfSize;
+    float maxHalfX = (uShoulder > 0.5) ? max(1.0, halfSize.x - uShoulder) : halfSize.x;
+    float r = min(uRadius, min(maxHalfX, halfSize.y));
 
-    float sd = sdRoundedRect(p, halfSize, r);
+    float sd = sampleSd(pos, p, halfSize, r);
     if (sd > 0.0) {
         discard;
     }
 
     float distFromEdge = -sd;
-    float bezel = max(2.0, min(uBezel, r - 1.0));
+    float bezel = max(2.0, min(uBezel, max(2.0, r - 1.0)));
     float t = clamp(distFromEdge / bezel, 0.0, 1.0);
 
     float h = surfaceHeight(t);
@@ -85,41 +113,39 @@ void main() {
 
     vec2 grad;
     float eps = 0.5;
-    grad.x = sdRoundedRect(p + vec2(eps, 0.0), halfSize, r) - sd;
-    grad.y = sdRoundedRect(p + vec2(0.0, eps), halfSize, r) - sd;
+    grad.x = sampleSd(pos + vec2(eps, 0.0), p + vec2(eps, 0.0), halfSize, r) - sd;
+    grad.y = sampleSd(pos + vec2(0.0, eps), p + vec2(0.0, eps), halfSize, r) - sd;
     float glen = length(grad);
     grad = glen > 0.0001 ? grad / glen : vec2(0.0, 1.0);
 
     vec2 lightDir = normalize(vec2(0.45, -0.75));
     float rimDot = max(0.0, abs(dot(grad, lightDir)));
-    float rimFalloff = 1.0 - smoothstep(0.0, bezel * 0.55, distFromEdge);
-    float specHighlight = pow(rimDot * rimFalloff, 1.4) * uSpecular;
+    float rimFalloff = 1.0 - smoothstep(0.0, bezel * 0.45, distFromEdge);
+    float specHighlight = pow(rimDot * rimFalloff, 1.5) * uSpecular;
 
-    float innerRim = smoothstep(0.0, 1.8, distFromEdge) * (1.0 - smoothstep(1.8, 5.0, distFromEdge));
-    float rimGlow = innerRim * 0.28 * uSpecular;
+    float innerRim = smoothstep(0.0, 1.5, distFromEdge) * (1.0 - smoothstep(1.5, 4.2, distFromEdge));
+    float rimGlow = innerRim * 0.22 * uSpecular;
 
     float edgeMask = smoothstep(0.0, 1.5, distFromEdge);
     float glassAlpha = clamp(uAlpha, 0.02, 0.88);
+    float rimMask = 1.0 - t;
 
     if (uHasBg > 0.5 && uWinSize.x > 1.0 && uWinSize.y > 1.0) {
         vec2 worldPx = uWinOffset + qt_TexCoord0 * uResolution;
         vec2 bgUV = worldPx / uWinSize;
-        // Subtle convex lens magnification + strong Snell bezel refraction
-        vec2 centerPull = (qt_TexCoord0 - 0.5) * uResolution * (-0.035 * h) / uWinSize;
+        vec2 centerPull = -p * (0.045 * h) / uWinSize;
         vec2 offset = -grad * displacement / uWinSize;
-        vec2 refractedUV = bgUV + offset + centerPull;
+        vec2 refractedUV = bgUV + offset * rimMask + centerPull;
 
-        float blurRad = max(0.5, uBlur);
-        // Chromatic aberration near curved glass edges
-        float ca = (1.0 - t) * 0.45 + 0.06;
-        float rCh = sampleBgBlurred(refractedUV + offset * ca, blurRad).r;
-        float gCh = sampleBgBlurred(refractedUV, blurRad).g;
-        float bCh = sampleBgBlurred(refractedUV - offset * ca, blurRad).b;
+        float ca = rimMask * 0.75 + 0.05;
+        float rCh = texture(uBgTex, clamp(refractedUV + offset * ca, vec2(0.001), vec2(0.999))).r;
+        float gCh = texture(uBgTex, clamp(refractedUV, vec2(0.001), vec2(0.999))).g;
+        float bCh = texture(uBgTex, clamp(refractedUV - offset * ca, vec2(0.001), vec2(0.999))).b;
         vec3 color = vec3(rCh, gCh, bCh);
 
-        // Darken/tint glass body according to Opacity setting
-        color = mix(color, vec3(0.03, 0.04, 0.06), glassAlpha);
-        color += vec3(0.92, 0.96, 1.0) * (specHighlight + rimGlow + fresnel * 0.38);
+        float tintMix = clamp(glassAlpha * 0.42, 0.02, 0.42);
+        color = mix(color, vec3(0.03, 0.04, 0.06), tintMix);
+        color += vec3(0.92, 0.96, 1.0) * (specHighlight + rimGlow + fresnel * 0.35);
 
         float alpha = edgeMask * qt_Opacity;
         fragColor = vec4(color * alpha, alpha);

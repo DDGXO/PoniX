@@ -338,6 +338,235 @@ Item {
                     ctx.fillStyle = "#082f49";
                     ctx.fillRect(lx - 2 + ox * 0.7, cy - 1 + oy * 0.5, 4, 2);
                     ctx.fillRect(rx - 2 + ox * 0.7, cy - 1 + oy * 0.5, 4, 2);
+                } else if (st === "vector" || st === "emo" || st === "cozmo") {
+                    ctx.fillStyle = st === "emo" ? "#818cf8" : (st === "cozmo" ? "#38bdf8" : "#22d3ee");
+                    for (var vb = 0; vb < 2; vb++) {
+                        var vx = (vb === 0 ? lx : rx) + ox * 0.8;
+                        var vy = cy + oy * 0.7;
+                        ctx.beginPath();
+                        ctx.roundedRect(vx - 4.5, vy - 5.5, 9, 11, st === "cozmo" ? 1.5 : 3.5);
+                        ctx.fill();
+                        if (st === "cozmo") {
+                            ctx.fillStyle = "rgba(0,0,0,0.28)";
+                            ctx.fillRect(vx - 4.5, vy - 2, 9, 1);
+                            ctx.fillRect(vx - 4.5, vy + 1, 9, 1);
+                            ctx.fillStyle = "#38bdf8";
+                        }
+                    }
+                } else if (st === "happy_arc" || st === "uwu") {
+                    ctx.strokeStyle = st === "uwu" ? "#f472b6" : "#fde047";
+                    ctx.lineWidth = 2.2;
+                    ctx.lineCap = "round";
+                    for (var ha = 0; ha < 2; ha++) {
+                        var hx = ha === 0 ? lx : rx;
+                        ctx.beginPath();
+                        if (st === "uwu") {
+                            ctx.arc(hx, cy - 1, 4.2, 0.2, Math.PI - 0.2);
+                        } else {
+                            ctx.arc(hx, cy + 2.5, 4.5, Math.PI * 1.15, Math.PI * 1.85);
+                        }
+                        ctx.stroke();
+                    }
+                } else if (st === "curious") {
+                    ctx.fillStyle = "#f8fafc";
+                    ctx.beginPath(); ctx.ellipse(lx + ox * 0.5, cy + oy * 0.5, 4.2, 6.5, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(rx + ox * 0.5, cy + 1 + oy * 0.5, 4.5, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "#0f172a";
+                    ctx.beginPath(); ctx.arc(lx + ox * 0.8, cy + oy * 0.7, 1.6, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(rx + ox * 0.8, cy + 1 + oy * 0.7, 1.4, 0, Math.PI * 2); ctx.fill();
+                } else if (st === "shocked") {
+                    for (var sh = 0; sh < 2; sh++) {
+                        var sx = sh === 0 ? lx : rx;
+                        ctx.fillStyle = "#ffffff";
+                        ctx.beginPath(); ctx.arc(sx, cy, 6.5, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "#09090b";
+                        ctx.beginPath(); ctx.arc(sx + ox * 0.4, cy + oy * 0.4, 1.4, 0, Math.PI * 2); ctx.fill();
+                    }
+                } else if (st === "dizzy") {
+                    ctx.strokeStyle = "#fde047";
+                    ctx.lineWidth = 1.5;
+                    for (var dz = 0; dz < 2; dz++) {
+                        var dx = dz === 0 ? lx : rx;
+                        var ph = customEyeCanvas.animPhase * (dz === 0 ? 1 : -1);
+                        ctx.beginPath(); ctx.arc(dx, cy, 5.2, ph, ph + Math.PI * 1.4); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(dx, cy, 2.6, -ph, -ph + Math.PI * 1.4); ctx.stroke();
+                    }
+                } else if (st === "laser") {
+                    ctx.fillStyle = "rgba(239, 68, 68, 0.35)";
+                    ctx.fillRect(0, cy - 3.5, width, 7);
+                    ctx.fillStyle = "#ef4444";
+                    ctx.beginPath(); ctx.arc(lx, cy, 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(rx, cy, 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "#fecaca";
+                    ctx.fillRect(0, cy - 1, width, 2);
+                } else if (st === "demon" || st === "fox") {
+                    ctx.fillStyle = st === "demon" ? "#dc2626" : "#fb923c";
+                    for (var dm = 0; dm < 2; dm++) {
+                        var exD = dm === 0 ? lx : rx;
+                        ctx.save(); ctx.translate(exD, cy); ctx.rotate(dm === 0 ? 0.38 : -0.38);
+                        ctx.beginPath(); ctx.ellipse(0, 0, 5.5, 2.4, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "#111111";
+                        ctx.beginPath(); ctx.arc(ox * 0.5, 0, 1.4, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = st === "demon" ? "#dc2626" : "#fb923c";
+                        ctx.restore();
+                    }
+                } else if (st === "byakugan") {
+                    for (var by = 0; by < 2; by++) {
+                        var bx = by === 0 ? lx : rx;
+                        ctx.fillStyle = "#f1f5f9";
+                        ctx.beginPath(); ctx.arc(bx, cy, 6.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1.0;
+                        ctx.beginPath(); ctx.arc(bx + ox * 0.5, cy + oy * 0.5, 3.0, 0, Math.PI * 2); ctx.stroke();
+                    }
+                } else if (st === "mangekyo") {
+                    for (var mk = 0; mk < 2; mk++) {
+                        var mx = mk === 0 ? lx : rx;
+                        ctx.fillStyle = "#ef4444";
+                        ctx.beginPath(); ctx.arc(mx, cy, 6.5, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "#111111";
+                        for (var bl = 0; bl < 3; bl++) {
+                            var ba = customEyeCanvas.animPhase * 1.4 + bl * (Math.PI * 2 / 3);
+                            ctx.beginPath();
+                            ctx.moveTo(mx, cy);
+                            ctx.lineTo(mx + Math.cos(ba) * 5.8, cy + Math.sin(ba) * 5.8);
+                            ctx.lineTo(mx + Math.cos(ba + 0.5) * 3.8, cy + Math.sin(ba + 0.5) * 3.8);
+                            ctx.closePath(); ctx.fill();
+                        }
+                    }
+                } else if (st === "geass") {
+                    for (var ge = 0; ge < 2; ge++) {
+                        var gx = ge === 0 ? lx : rx;
+                        ctx.fillStyle = "#4c0519";
+                        ctx.beginPath(); ctx.arc(gx, cy, 6.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = "#f43f5e"; ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(gx - 4, cy - 1); ctx.lineTo(gx, cy + 3); ctx.lineTo(gx + 4, cy - 1);
+                        ctx.moveTo(gx, cy - 3.5); ctx.lineTo(gx, cy + 3);
+                        ctx.stroke();
+                    }
+                } else if (st === "gojo") {
+                    for (var gj = 0; gj < 2; gj++) {
+                        var gjx = gj === 0 ? lx : rx;
+                        ctx.fillStyle = "rgba(56, 189, 248, 0.35)";
+                        ctx.beginPath(); ctx.arc(gjx, cy, 7.5, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "#7dd3fc";
+                        ctx.beginPath(); ctx.arc(gjx, cy, 5.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.beginPath(); ctx.arc(gjx + ox * 0.5, cy + oy * 0.5, 2.0, 0, Math.PI * 2); ctx.fill();
+                    }
+                } else if (st === "sans") {
+                    ctx.fillStyle = "#18181b";
+                    ctx.beginPath(); ctx.arc(lx, cy, 5.8, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "#18181b";
+                    ctx.beginPath(); ctx.arc(rx, cy, 5.8, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "#38bdf8";
+                    ctx.beginPath(); ctx.arc(rx + ox * 0.5, cy + oy * 0.5, 3.2 + Math.sin(customEyeCanvas.animPhase * 2) * 0.6, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "#ffffff";
+                    ctx.beginPath(); ctx.arc(rx + ox * 0.5, cy + oy * 0.5, 1.3, 0, Math.PI * 2); ctx.fill();
+                } else if (st === "pacman") {
+                    var mouth = 0.25 + Math.abs(Math.sin(customEyeCanvas.animPhase * 2)) * 0.55;
+                    ctx.fillStyle = "#facc15";
+                    for (var pm = 0; pm < 2; pm++) {
+                        var px2 = pm === 0 ? lx : rx;
+                        ctx.beginPath(); ctx.moveTo(px2, cy);
+                        ctx.arc(px2, cy, 5.8, mouth, Math.PI * 2 - mouth);
+                        ctx.closePath(); ctx.fill();
+                    }
+                } else if (st === "invader") {
+                    ctx.fillStyle = "#4ade80";
+                    for (var iv = 0; iv < 2; iv++) {
+                        var ix2 = iv === 0 ? lx : rx;
+                        ctx.fillRect(ix2 - 4, cy - 3, 8, 6);
+                        ctx.fillStyle = "#052e16";
+                        ctx.fillRect(ix2 - 2 + ox * 0.4, cy - 1, 2, 2);
+                        ctx.fillRect(ix2 + 1 + ox * 0.4, cy - 1, 2, 2);
+                        ctx.fillStyle = "#4ade80";
+                    }
+                } else if (st === "crt") {
+                    ctx.fillStyle = "#ffb000";
+                    ctx.fillRect(lx - 4, cy - 4, 8, 8);
+                    ctx.fillRect(rx - 4, cy - 4, 8, 8);
+                    ctx.fillStyle = "rgba(0,0,0,0.45)";
+                    for (var sl = -4; sl < 4; sl += 2) ctx.fillRect(lx - 4, cy + sl, 26, 1);
+                } else if (st === "vapor") {
+                    var vg = ctx.createLinearGradient(0, cy - 5, 0, cy + 5);
+                    vg.addColorStop(0, "#ff71ce"); vg.addColorStop(1, "#01cdfe");
+                    ctx.fillStyle = vg;
+                    ctx.fillRect(lx - 4 + ox * 0.6, cy - 5, 8, 10);
+                    ctx.fillRect(rx - 4 + ox * 0.6, cy - 5, 8, 10);
+                } else if (st === "glitch") {
+                    var jx = Math.sin(customEyeCanvas.animPhase * 9) * 2.2;
+                    ctx.fillStyle = "rgba(239, 68, 68, 0.75)";
+                    ctx.fillRect(lx - 4 + jx, cy - 4, 7, 8); ctx.fillRect(rx - 4 + jx, cy - 4, 7, 8);
+                    ctx.fillStyle = "rgba(34, 211, 238, 0.75)";
+                    ctx.fillRect(lx - 4 - jx, cy - 4, 7, 8); ctx.fillRect(rx - 4 - jx, cy - 4, 7, 8);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(lx - 3, cy - 4, 6, 8); ctx.fillRect(rx - 3, cy - 4, 6, 8);
+                } else if (st === "loading") {
+                    ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 2;
+                    for (var ld = 0; ld < 2; ld++) {
+                        var ldx = ld === 0 ? lx : rx;
+                        ctx.beginPath(); ctx.arc(ldx, cy, 4.5, customEyeCanvas.animPhase * 2, customEyeCanvas.animPhase * 2 + Math.PI * 1.3); ctx.stroke();
+                    }
+                } else if (st === "music_note") {
+                    ctx.fillStyle = "#38bdf8"; ctx.font = "bold 14px sans-serif";
+                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    var bounce = Math.sin(customEyeCanvas.animPhase * 3) * 1.5;
+                    ctx.fillText("♪", lx, cy + bounce); ctx.fillText("♪", rx, cy - bounce);
+                } else if (st === "fire") {
+                    for (var fl = 0; fl < 2; fl++) {
+                        var fx = fl === 0 ? lx : rx;
+                        ctx.fillStyle = "#f97316";
+                        ctx.beginPath(); ctx.ellipse(fx, cy + 1, 4.5, 6, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "#fde047";
+                        ctx.beginPath(); ctx.ellipse(fx, cy + 2, 2.4, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+                    }
+                } else if (st === "bolt") {
+                    ctx.fillStyle = "#facc15"; ctx.font = "bold 13px sans-serif";
+                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillText("⚡", lx, cy + 1); ctx.fillText("⚡", rx, cy + 1);
+                } else if (st === "moon") {
+                    ctx.fillStyle = "#fde68a";
+                    for (var mn = 0; mn < 2; mn++) {
+                        var mnx = mn === 0 ? lx : rx;
+                        ctx.beginPath(); ctx.arc(mnx, cy, 5.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "#09090b";
+                        ctx.beginPath(); ctx.arc(mnx + 2.4, cy - 1.2, 4.4, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "#fde68a";
+                    }
+                } else if (st === "sunglasses") {
+                    ctx.fillStyle = "#18181b";
+                    ctx.fillRect(lx - 7, cy - 4, 12, 8);
+                    ctx.fillRect(rx - 5, cy - 4, 12, 8);
+                    ctx.fillRect(lx + 5, cy - 2, rx - lx - 10, 2);
+                    ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 1.2;
+                    ctx.strokeRect(lx - 7, cy - 4, 12, 8);
+                    ctx.strokeRect(rx - 5, cy - 4, 12, 8);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(lx - 5, cy - 3, 4, 1.5);
+                    ctx.fillRect(rx - 3, cy - 3, 4, 1.5);
+                } else if (st === "monocle") {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.beginPath(); ctx.arc(lx, cy, 4.2, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(rx, cy, 4.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "#111111";
+                    ctx.beginPath(); ctx.arc(lx + ox * 0.5, cy + oy * 0.5, 1.8, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(rx + ox * 0.5, cy + oy * 0.5, 1.8, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = "#eab308"; ctx.lineWidth = 1.6;
+                    ctx.beginPath(); ctx.arc(rx, cy, 6.2, 0, Math.PI * 2); ctx.stroke();
+                } else if (st === "cry") {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.beginPath(); ctx.arc(lx, cy - 1, 4.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(rx, cy - 1, 4.5, 0, Math.PI * 2); ctx.fill();
+                    var ty = (customEyeCanvas.animPhase * 4) % 6;
+                    ctx.fillStyle = "#38bdf8";
+                    ctx.fillRect(lx - 1.5, cy + 3 + ty, 3, 4);
+                    ctx.fillRect(rx - 1.5, cy + 3 + ty, 3, 4);
+                } else if (st === "love_struck") {
+                    var sc = 0.9 + Math.abs(Math.sin(customEyeCanvas.animPhase * 2)) * 0.25;
+                    ctx.fillStyle = "#ec4899"; ctx.font = "bold " + Math.round(13 * sc) + "px sans-serif";
+                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillText("♥", lx, cy + 1); ctx.fillText("♥", rx, cy + 1);
                 }
             }
         }
